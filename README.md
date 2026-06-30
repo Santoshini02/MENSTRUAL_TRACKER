@@ -1,10 +1,26 @@
 # 🌸 Menstrual Tracker — College Project
 
+A Flask-based web application for tracking menstrual cycles, predicting future periods, logging symptoms, and generating personalized health reports.
+
+## 🌐 Live Demo
+Try it here: https://menstrual-tracker-yv60.onrender.com
+
 ## Tech Stack
 - **Frontend:** HTML, CSS, JavaScript, Chart.js
 - **Backend:** Python (Flask)
 - **Database:** SQLite
 - **PDF:** ReportLab
+
+---
+
+## ✨ Features
+- User Registration & Login
+- Track menstrual cycle data
+- Predict upcoming periods
+- Symptom logging
+- Health tips & AI guide
+- Analytics and trend charts
+- Download PDF health report
 
 ---
 
@@ -58,3 +74,20 @@ Every database query is filtered by `user_id` from the session. No cross-user da
 ## PDF Report
 Visit `/download_report` or click "Download Report" from Dashboard/Profile.
 Requires `reportlab`: `pip install reportlab`
+
+---
+
+## 🚀 Future Improvements
+- Email reminders for periods
+- Mobile app version
+- Better AI assistant
+- Doctor consultation support
+- Cloud database integration
+
+---
+
+## 👩‍💻 Author
+**Santoshini Nahak**  
+
+## 📜 License
+This project is created for educational and academic purposes.
