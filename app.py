@@ -7,7 +7,9 @@ from functools import wraps
 app = Flask(__name__)
 app.secret_key = 'menstrual_tracker_secret_key_2024'
 
-DB_PATH = 'tracker.db'
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "tracker.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
