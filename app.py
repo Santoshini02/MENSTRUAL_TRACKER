@@ -382,7 +382,7 @@ def chatbot():
         if key in msg:
             return jsonify({'reply': response})
     return jsonify({'reply': "I am not sure about that. Try asking about cycle length, symptoms, cramps, fertility, or predictions!"})
+init_db()
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
