@@ -1,0 +1,179 @@
+/* ─────────────────────────────────────────────────────
+   Menstrual Tracker — Global Stylesheet
+   Supplements base.html inline styles
+───────────────────────────────────────────────────── */
+
+/* ── Scrollbar ── */
+* { scrollbar-width: thin; scrollbar-color: #FFAAC8 transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #FFAAC8; border-radius: 10px; }
+
+/* ── Page Load Animation ── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.content > * {
+    animation: fadeInUp 0.4s ease both;
+}
+.content > *:nth-child(1) { animation-delay: 0.04s; }
+.content > *:nth-child(2) { animation-delay: 0.10s; }
+.content > *:nth-child(3) { animation-delay: 0.16s; }
+.content > *:nth-child(4) { animation-delay: 0.22s; }
+.content > *:nth-child(5) { animation-delay: 0.28s; }
+
+/* ── Stat Card Hover ── */
+.stat-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(231, 84, 128, 0.18);
+}
+
+/* ── Card hover ── */
+.card {
+    transition: box-shadow 0.2s;
+}
+
+/* ── Nav item pulse on active ── */
+.nav-item.active {
+    box-shadow: 0 0 0 2px rgba(231, 84, 128, 0.35);
+}
+
+/* ── Table row transition ── */
+tbody tr {
+    transition: background 0.15s;
+}
+
+/* ── Btn ripple ── */
+.btn {
+    position: relative;
+    overflow: hidden;
+}
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.15);
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-radius: inherit;
+}
+.btn:active::after { opacity: 1; }
+
+/* ── Chart canvas default ── */
+canvas { display: block; }
+
+/* ── Progress bar animation ── */
+@keyframes growBar {
+    from { width: 0 !important; }
+    to   { width: var(--w) !important; }
+}
+
+/* ── Skeleton loader ── */
+.skeleton {
+    background: linear-gradient(90deg, #F5D5E5 25%, #FFE8F2 50%, #F5D5E5 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 8px;
+}
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── Toast notification ── */
+#toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--deep, #2D1B2E);
+    color: white;
+    padding: 13px 20px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    z-index: 9999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(.34,1.56,.64,1);
+    max-width: 320px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+#toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+#toast .toast-icon { font-size: 16px; }
+
+/* ── Mobile hamburger ── */
+.hamburger {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; color: var(--deep, #2D1B2E);
+    padding: 4px 8px;
+}
+@media (max-width: 900px) {
+    .hamburger { display: flex; align-items: center; }
+    .sidebar-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(45,27,46,0.5);
+        z-index: 99;
+        backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.show { display: block; }
+}
+
+/* ── Cycle ring SVG ── */
+.ring-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.ring-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    fill: var(--deep, #2D1B2E);
+}
+.ring-sub {
+    font-size: 11px;
+    fill: #9E7A9A;
+}
+
+/* ── Insight pill ── */
+.insight-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: #FFF0F5;
+    border: 1px solid #FFAAC8;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #E75480;
+    font-weight: 600;
+    margin: 3px;
+}
+
+/* ── Phase bar ── */
+.phase-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+.phase-segment { transition: flex 0.8s ease; }
+
+/* ── Print styles for PDF preview hint ── */
+@media print {
+    .sidebar, .topbar, .btn { display: none !important; }
+    .main { margin-left: 0; }
+    .content { padding: 0; }
+}

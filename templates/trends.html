@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Trends — Menstrual Tracker{% endblock %}
+{% block page_title %}Trends & Analytics 📊{% endblock %}
+
+{% block content %}
+<!-- Analytics Type Badges -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+    <span class="badge badge-pink" style="font-size:12px;padding:6px 14px;">📊 Descriptive Analytics</span>
+    <span class="badge badge-blue" style="font-size:12px;padding:6px 14px;">🔍 Diagnostic Analytics</span>
+    <span class="badge badge-green" style="font-size:12px;padding:6px 14px;">🔮 Predictive Analytics</span>
+    <span class="badge badge-yellow" style="font-size:12px;padding:6px 14px;">💡 Prescriptive Analytics</span>
+</div>
+
+<!-- Summary Stats Row -->
+<div class="grid-4 mb-6" id="statCards">
+    <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-label">Avg Cycle Length</div><div class="stat-value" id="avgCycleVal">—</div><div class="stat-sub">Descriptive</div></div>
+    <div class="stat-card"><div class="stat-icon">🔍</div><div class="stat-label">Irregular Cycles</div><div class="stat-value" id="irregularVal">—</div><div class="stat-sub">Diagnostic</div></div>
+    <div class="stat-card"><div class="stat-icon">🔮</div><div class="stat-label">Total Cycles</div><div class="stat-value" id="totalVal">—</div><div class="stat-sub">Predictive base</div></div>
+    <div class="stat-card"><div class="stat-icon">💡</div><div class="stat-label">Top Symptom</div><div class="stat-value" id="topSymVal" style="font-size:14px;">—</div><div class="stat-sub">Prescriptive</div></div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="grid-2 mb-6">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">📈 Cycle Length Trend</div>
+            <span class="badge badge-pink">Descriptive + Predictive</span>
+        </div>
+        <div class="card-body"><canvas id="cycleChart" height="180"></canvas></div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">😊 Mood Distribution</div>
+            <span class="badge badge-blue">Descriptive</span>
+        </div>
+        <div class="card-body"><canvas id="moodChart" height="180"></canvas></div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="grid-2 mb-6">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">🩺 Symptom Frequency</div>
+            <span class="badge badge-green">Descriptive + Prescriptive</span>
+        </div>
+        <div class="card-body"><canvas id="symptomsChart" height="200"></canvas></div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">🔍 Cycle Regularity Analysis</div>
+            <span class="badge badge-yellow">Diagnostic</span>
+        </div>
+        <div class="card-body">
+            <div id="regularityPanel"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Prescriptive Suggestions -->
+<div class="card mb-6">
+    <div class="card-header">
+        <div class="card-title">💡 Prescriptive Insights</div>
+        <span class="badge badge-yellow">Prescriptive Analytics</span>
+    </div>
+    <div class="card-body">
+        <div id="prescriptive" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const PINK = '#E75480'; const LIGHT_PINK = '#FF85A1'; const MAUVE = '#7B3F6E';
+const COLORS = ['#E75480','#FF85A1','#7B3F6E','#FFAAC8','#9E7A9A','#C85DA0','#F0A0C0','#D44070'];
+
+fetch('/api/trends').then(r=>r.json()).then(data => {
+    // Stat cards
+    document.getElementById('avgCycleVal').textContent = data.avg_cycle + ' days';
+    document.getElementById('irregularVal').textContent = data.irregular_count;
+    document.getElementById('totalVal').textContent = data.total_cycles;
+    const topSym = Object.entries(data.sym_count).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('topSymVal').textContent = topSym ? topSym[0] : 'N/A';
+
+    // Cycle Length Chart
+    if (data.cycle_lengths.length > 0) {
+        const avgLine = Array(data.cycle_lengths.length).fill(data.avg_cycle);
+        new Chart(document.getElementById('cycleChart'), {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    { label: 'Cycle Length (days)', data: data.cycle_lengths, borderColor: PINK, backgroundColor: 'rgba(231,84,128,0.1)', fill: true, tension: 0.4, pointBackgroundColor: PINK, pointRadius: 5 },
+                    { label: `Avg (${data.avg_cycle}d)`, data: avgLine, borderColor: MAUVE, borderDash: [6,4], fill: false, pointRadius: 0 }
+                ]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: false, min: 15 } } }
+        });
+    } else {
+        document.getElementById('cycleChart').parentElement.innerHTML += '<div class="empty-state" style="padding:30px 0;"><p>Log at least 2 cycles to see trend chart</p></div>';
+        document.getElementById('cycleChart').style.display = 'none';
+    }
+
+    // Mood Chart
+    const moods = Object.keys(data.mood_count);
+    const moodVals = Object.values(data.mood_count);
+    if (moods.length > 0) {
+        new Chart(document.getElementById('moodChart'), {
+            type: 'doughnut',
+            data: { labels: moods, datasets: [{ data: moodVals, backgroundColor: COLORS.slice(0, moods.length), borderWidth: 2, borderColor: 'white' }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+        });
+    } else {
+        document.getElementById('moodChart').parentElement.innerHTML += '<div class="empty-state" style="padding:30px 0;"><p>No mood data logged yet</p></div>';
+        document.getElementById('moodChart').style.display = 'none';
+    }
+
+    // Symptoms Chart
+    const symLabels = Object.keys(data.sym_count);
+    const symVals = Object.values(data.sym_count);
+    if (symLabels.length > 0) {
+        new Chart(document.getElementById('symptomsChart'), {
+            type: 'bar',
+            data: { labels: symLabels, datasets: [{ label: 'Frequency', data: symVals, backgroundColor: COLORS.slice(0, symLabels.length), borderRadius: 8 }] },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    } else {
+        document.getElementById('symptomsChart').parentElement.innerHTML += '<div class="empty-state" style="padding:30px 0;"><p>No symptom data logged yet</p></div>';
+        document.getElementById('symptomsChart').style.display = 'none';
+    }
+
+    // Regularity Analysis (Diagnostic)
+    const reg = document.getElementById('regularityPanel');
+    const lengths = data.cycle_lengths;
+    if (lengths.length < 2) {
+        reg.innerHTML = '<div class="empty-state" style="padding:20px 0;"><p>Log at least 3 cycles for diagnostic analysis</p></div>';
+    } else {
+        const min = Math.min(...lengths), max = Math.max(...lengths);
+        const std = Math.sqrt(lengths.reduce((s,l)=>s+(l-data.avg_cycle)**2,0)/lengths.length).toFixed(1);
+        const irregulars = lengths.filter(l=>l<21||l>35);
+        let regClass = 'badge-green', regText = 'Very Regular';
+        if (std >= 6) { regClass = 'badge-red'; regText = 'Irregular'; }
+        else if (std >= 3) { regClass = 'badge-yellow'; regText = 'Moderate'; }
+
+        reg.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div style="background:var(--pink-pale);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Shortest</div>
+                    <div style="font-size:22px;font-weight:700;font-family:'Playfair Display',serif;color:var(--deep);">${min}d</div>
+                </div>
+                <div style="background:var(--pink-pale);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Longest</div>
+                    <div style="font-size:22px;font-weight:700;font-family:'Playfair Display',serif;color:var(--deep);">${max}d</div>
+                </div>
+                <div style="background:var(--pink-pale);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Variation (σ)</div>
+                    <div style="font-size:22px;font-weight:700;font-family:'Playfair Display',serif;color:var(--deep);">±${std}</div>
+                </div>
+                <div style="background:var(--pink-pale);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Regularity</div>
+                    <span class="badge ${regClass}" style="font-size:12px;margin-top:4px;display:inline-block;">${regText}</span>
+                </div>
+            </div>
+            ${irregulars.length > 0 ? `<div style="background:#FFEBEE;border:1px solid #FFCDD2;border-radius:10px;padding:12px;font-size:13px;color:#C62828;"><i class="fas fa-exclamation-triangle"></i> ${irregulars.length} irregular cycle(s) detected (outside 21–35 day range). Consider consulting a healthcare provider.</div>` : `<div style="background:#E8F5E9;border:1px solid #C8E6C9;border-radius:10px;padding:12px;font-size:13px;color:#2E7D32;"><i class="fas fa-check-circle"></i> All cycles within normal range (21–35 days). Great tracking!</div>`}`;
+    }
+
+    // Prescriptive
+    const suggestions = [];
+    if (data.avg_cycle < 21) suggestions.push({ icon:'⚠️', title:'Short Cycles Detected', text:'Cycles under 21 days may indicate hormonal imbalance. Consult a gynecologist.', color:'#FFEBEE' });
+    else if (data.avg_cycle > 35) suggestions.push({ icon:'⚠️', title:'Long Cycles Detected', text:'Cycles over 35 days may indicate PCOS or thyroid issues. Consider a check-up.', color:'#FFEBEE' });
+    else suggestions.push({ icon:'✅', title:'Healthy Cycle Length', text:`Your ${data.avg_cycle}-day average is within the normal range. Keep tracking!`, color:'#E8F5E9' });
+
+    if (data.sym_count['cramps'] || data.sym_count['cramping']) suggestions.push({ icon:'🌡️', title:'Cramp Relief Tips', text:'Try heat pads, ibuprofen, or light yoga. Omega-3 foods can reduce inflammation.', color:'#FFF8E1' });
+    if (data.sym_count['bloating']) suggestions.push({ icon:'💧', title:'Reduce Bloating', text:'Reduce salt intake before your period. Stay hydrated and limit caffeine.', color:'#E3F2FD' });
+    if (data.sym_count['headache'] || data.sym_count['headaches']) suggestions.push({ icon:'🧠', title:'Hormonal Headaches', text:'Track your headaches relative to cycle phase. Magnesium supplements may help.', color:'#F3E5F5' });
+    if (data.irregular_count > 0) suggestions.push({ icon:'📋', title:'Manage Irregularity', text:'Stress, weight changes, and diet affect cycle regularity. Log consistently.', color:'#FFF3E0' });
+    suggestions.push({ icon:'💊', title:'Iron & Nutrition', text:'Eat iron-rich foods during your period. Vitamin D and Calcium support hormonal health.', color:'#E8F5E9' });
+
+    document.getElementById('prescriptive').innerHTML = suggestions.map(s => `
+        <div style="background:${s.color};border-radius:12px;padding:16px;">
+            <div style="font-size:20px;margin-bottom:8px;">${s.icon}</div>
+            <div style="font-weight:700;color:var(--deep);font-size:14px;margin-bottom:6px;">${s.title}</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.5;">${s.text}</div>
+        </div>`).join('');
+});
+</script>
+{% endblock %}

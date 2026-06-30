@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Health — Menstrual Tracker{% endblock %}
+{% block page_title %}Health & Wellness ❤️{% endblock %}
+
+{% block content %}
+<!-- Phase Guide -->
+<div class="card mb-6">
+    <div class="card-header"><div class="card-title">🔄 Understanding Your Cycle Phases</div></div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+            {% set phases = [
+                ('🩸','Menstruation','Days 1–5','Your uterine lining sheds. Energy may be lower. Rest and self-care are essential.','#FFE0EC','#E75480'),
+                ('🌱','Follicular','Days 6–13','Estrogen rises. Energy increases. Great time for new projects and social activities.','#E8F5E9','#2E7D32'),
+                ('🌸','Ovulation','Days 14–15','Peak estrogen and LH surge. You may feel your best — confident and social.','#E3F2FD','#1565C0'),
+                ('🍂','Luteal','Days 16–28','Progesterone rises then drops. PMS may occur. Slow down and nurture yourself.','#FFF8E1','#F57F17')
+            ] %}
+            {% for emoji, name, days, desc, bg, color in phases %}
+            <div style="background:{{ bg }};border-radius:14px;padding:18px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">{{ emoji }}</div>
+                <div style="font-weight:700;color:{{ color }};font-size:15px;margin-bottom:3px;">{{ name }}</div>
+                <div style="font-size:11px;color:#666;margin-bottom:10px;font-weight:600;">{{ days }}</div>
+                <div style="font-size:12px;color:var(--text);line-height:1.5;">{{ desc }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Nutrition + Exercise Row -->
+<div class="grid-2 mb-6">
+    <div class="card">
+        <div class="card-header"><div class="card-title">🥗 Nutrition by Phase</div></div>
+        <div class="card-body">
+            {% set nutrition = [
+                ('🩸 Menstruation','Iron (spinach, lentils), Vitamin C, dark chocolate, warm foods, ginger tea'),
+                ('🌱 Follicular','Fermented foods, fresh veggies, lean protein, Vitamin B foods like eggs and seeds'),
+                ('🌸 Ovulation','Antioxidants (berries, leafy greens), fiber-rich foods, flaxseeds'),
+                ('🍂 Luteal','Magnesium (dark chocolate, nuts), complex carbs, calcium-rich foods, reduce caffeine')
+            ] %}
+            {% for phase, foods in nutrition %}
+            <div style="margin-bottom:14px;padding:12px;background:var(--pink-pale);border-radius:10px;">
+                <div style="font-weight:700;font-size:13px;color:var(--deep);margin-bottom:5px;">{{ phase }}</div>
+                <div style="font-size:12px;color:var(--text);line-height:1.5;">{{ foods }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><div class="card-title">🏃‍♀️ Exercise by Phase</div></div>
+        <div class="card-body">
+            {% set exercises = [
+                ('🩸 Menstruation','Gentle yoga, walking, stretching, swimming. Avoid high-intensity. Rest is valid.'),
+                ('🌱 Follicular','Cardio, strength training, running, cycling. Energy is building — use it!'),
+                ('🌸 Ovulation','HIIT, spin classes, group fitness, competitive sports. Peak performance phase.'),
+                ('🍂 Luteal','Pilates, yoga, light weights, hiking. Intensity may decrease — listen to your body.')
+            ] %}
+            {% for phase, ex in exercises %}
+            <div style="margin-bottom:14px;padding:12px;background:var(--pink-pale);border-radius:10px;">
+                <div style="font-weight:700;font-size:13px;color:var(--deep);margin-bottom:5px;">{{ phase }}</div>
+                <div style="font-size:12px;color:var(--text);line-height:1.5;">{{ ex }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- General Health Tips -->
+<div class="card mb-6">
+    <div class="card-header"><div class="card-title">💡 Essential Health Tips</div></div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
+            {% set tips = [
+                ('💧','Stay Hydrated','Drink 8–10 glasses of water daily. Hydration reduces bloating, cramps, and headaches.'),
+                ('😴','Prioritize Sleep','7–9 hours of quality sleep supports hormonal balance and reduces PMS symptoms.'),
+                ('🧘','Manage Stress','Chronic stress disrupts cycles. Try meditation, journaling, or deep breathing daily.'),
+                ('🌡️','Track Your Temperature','Basal body temperature rises slightly after ovulation — useful for fertility tracking.'),
+                ('🚭','Avoid Smoking','Smoking is linked to more painful periods and earlier menopause. Quitting helps.'),
+                ('🩺','Regular Check-ups','Annual gynecological exams and Pap smears are essential for reproductive health.'),
+                ('💊','Consider Supplements','Iron, Vitamin D, Magnesium, and Omega-3 can significantly ease menstrual symptoms.'),
+                ('📱','Track Consistently','More data = better predictions. Log every cycle for accurate AI insights.')
+            ] %}
+            {% for emoji, title, tip in tips %}
+            <div style="display:flex;gap:12px;padding:14px;background:var(--pink-pale);border-radius:12px;">
+                <div style="font-size:24px;flex-shrink:0;">{{ emoji }}</div>
+                <div>
+                    <div style="font-weight:700;font-size:13px;color:var(--deep);margin-bottom:4px;">{{ title }}</div>
+                    <div style="font-size:12px;color:var(--text);line-height:1.5;">{{ tip }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Warning Signs -->
+<div class="card">
+    <div class="card-header"><div class="card-title">⚠️ When to See a Doctor</div></div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+            {% set warnings = [
+                'Periods lasting more than 7 days',
+                'Extremely heavy bleeding (soaking a pad every hour)',
+                'Cycles shorter than 21 or longer than 35 days',
+                'Severe pain that disrupts daily activities',
+                'Bleeding between periods or after sex',
+                'Missed periods for 3+ months (not pregnant)',
+                'Sudden changes in cycle pattern',
+                'Unusual vaginal discharge or odor'
+            ] %}
+            {% for w in warnings %}
+            <div style="background:#FFEBEE;border-left:4px solid #E75480;border-radius:0 10px 10px 0;padding:12px 14px;font-size:13px;color:var(--text);">
+                ⚠️ {{ w }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

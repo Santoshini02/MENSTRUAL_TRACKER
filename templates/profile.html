@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Profile — Menstrual Tracker{% endblock %}
+{% block page_title %}My Profile 👤{% endblock %}
+
+{% block content %}
+<div class="grid-2 mb-6">
+    <!-- Profile Info -->
+    <div class="card">
+        <div class="card-body" style="text-align:center;padding:36px 24px;">
+            <div style="width:80px;height:80px;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:white;margin:0 auto 16px;">
+                {{ username[0].upper() if username else 'U' }}
+            </div>
+            <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--deep);margin-bottom:4px;">
+                {{ username or 'User' }}
+            </div>
+            {% if user %}
+            <div style="color:var(--muted);font-size:14px;margin-bottom:4px;">{{ user['email'] }}</div>
+            {% if user['age'] %}<div style="color:var(--muted);font-size:13px;">Age: {{ user['age'] }}</div>{% endif %}
+            {% endif %}
+            <div style="margin-top:12px;"><span class="badge badge-pink">Active Member</span></div>
+            {% if user and user['created_at'] %}
+            <div style="margin-top:8px;font-size:12px;color:var(--muted);">Member since {{ user['created_at'][:10] }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="stat-card">
+            <div class="stat-icon">🗂️</div>
+            <div class="stat-label">Total Cycles</div>
+            <div class="stat-value">{{ stats.count }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-label">Last Period</div>
+            <div class="stat-value" style="font-size:18px;">{{ stats.last_period }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-label">Avg Cycle Length</div>
+            <div class="stat-value">
+                {{ stats.avg_cycle }}{% if stats.avg_cycle != 'N/A' %}<span style="font-size:14px;color:var(--muted);"> days</span>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Notice -->
+<div class="card mb-6">
+    <div class="card-body" style="display:flex;align-items:center;gap:16px;padding:18px 22px;background:linear-gradient(135deg,#E8F5E9,#F0FFF4);">
+        <div style="font-size:32px;">🔒</div>
+        <div>
+            <div style="font-weight:700;color:#2E7D32;font-size:15px;margin-bottom:4px;">Your Data is Completely Private</div>
+            <div style="font-size:13px;color:#388E3C;line-height:1.5;">All your cycle data is stored securely and linked only to your account. No other user can see your records.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Actions -->
+<div class="card">
+    <div class="card-header"><div class="card-title">⚙️ Account</div></div>
+    <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="/dashboard" class="btn btn-outline" style="justify-content:flex-start;">
+                <i class="fas fa-home" style="color:var(--pink);width:20px;"></i> Go to Dashboard
+            </a>
+            <a href="/trends" class="btn btn-outline" style="justify-content:flex-start;">
+                <i class="fas fa-chart-line" style="color:var(--pink);width:20px;"></i> View Analytics
+            </a>
+            <a href="/ai" class="btn btn-outline" style="justify-content:flex-start;">
+                <i class="fas fa-robot" style="color:var(--pink);width:20px;"></i> AI Guide and Chatbot
+            </a>
+            <hr style="border:none;border-top:1px solid #F5D5E5;margin:4px 0;">
+            <a href="/logout" class="btn btn-danger" style="justify-content:flex-start;">
+                <i class="fas fa-sign-out-alt" style="width:20px;"></i> Sign Out
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

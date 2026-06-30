@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Calendar — Menstrual Tracker{% endblock %}
+{% block page_title %}Calendar 📅{% endblock %}
+{% block topbar_actions %}
+<button class="btn btn-primary btn-sm" onclick="openModal('logModal')"><i class="fas fa-plus"></i> Log Cycle</button>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.cal-nav { display:flex;align-items:center;gap:16px; }
+.cal-nav button { background:none;border:1.5px solid var(--pink-border);color:var(--pink);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:14px;font-weight:600;transition:all 0.2s; }
+.cal-nav button:hover { background:var(--pink);color:white; }
+.cal-month { font-family:'Playfair Display',serif;font-size:20px;color:var(--deep);min-width:180px;text-align:center; }
+.calendar-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:4px; }
+.cal-day-header { text-align:center;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;padding:8px 0;text-transform:uppercase; }
+.cal-day {
+    min-height:72px;padding:8px;border-radius:10px;border:1.5px solid transparent;
+    cursor:pointer;position:relative;transition:all 0.15s;background:white;
+}
+.cal-day:hover { border-color:var(--pink-border);background:var(--pink-pale); }
+.cal-day.today { border-color:var(--pink);box-shadow:0 0 0 2px rgba(231,84,128,0.2); }
+.cal-day.period { background:linear-gradient(135deg,#FFE0EC,#FFB6C8);border-color:var(--pink); }
+.cal-day.predicted { background:linear-gradient(135deg,#F5D5E5,#FFE8F2);border-color:#FFAAC8;border-style:dashed; }
+.cal-day.fertile { background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-color:#81C784; }
+.cal-day.other-month { opacity:0.35; }
+.day-num { font-size:13px;font-weight:600;color:var(--deep); }
+.day-dot { width:6px;height:6px;border-radius:50%;background:var(--pink);display:inline-block;margin:1px; }
+.cal-day.today .day-num { color:var(--pink); }
+.legend { display:flex;gap:16px;flex-wrap:wrap; }
+.legend-item { display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text); }
+.legend-dot { width:12px;height:12px;border-radius:4px;flex-shrink:0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-6">
+    <div class="card-header">
+        <div class="cal-nav">
+            <button onclick="changeMonth(-1)">‹</button>
+            <div class="cal-month" id="monthLabel"></div>
+            <button onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#FFB6C8;"></div> Period</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#F5D5E5;border:1.5px dashed #FFAAC8;"></div> Predicted</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#C8E6C9;"></div> Fertile Window</div>
+            <div class="legend-item"><div class="legend-dot" style="border:2px solid var(--pink);background:white;"></div> Today</div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="calendar-grid" id="calHeaders"></div>
+        <div class="calendar-grid" id="calGrid" style="margin-top:4px;"></div>
+    </div>
+</div>
+
+<!-- Selected day info -->
+<div class="card" id="dayInfo" style="display:none;">
+    <div class="card-header"><div class="card-title" id="dayInfoTitle">Day Details</div></div>
+    <div class="card-body" id="dayInfoBody"></div>
+</div>
+
+<script>
+let currentDate = new Date();
+let cycleData = [];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// Headers
+DAYS.forEach(d => {
+    document.getElementById('calHeaders').innerHTML += `<div class="cal-day-header">${d}</div>`;
+});
+
+fetch('/api/cycles').then(r=>r.json()).then(data => {
+    cycleData = data;
+    renderCalendar();
+});
+
+function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    document.getElementById('monthLabel').textContent = `${MONTHS[month]} ${year}`;
+
+    const today = new Date();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    // Build set of period days, predicted days, fertile days
+    const periodDays = new Set();
+    const predictedDays = new Set();
+    const fertileDays = new Set();
+    const dayNotes = {};
+
+    let avgCycle = 28;
+    const starts = cycleData.map(c => new Date(c.start_date)).sort((a,b)=>a-b);
+    if (starts.length >= 2) {
+        const gaps = starts.slice(1).map((d,i)=>(d-starts[i])/86400000);
+        avgCycle = Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+    }
+
+    cycleData.forEach(c => {
+        const s = new Date(c.start_date);
+        const e = c.end_date ? new Date(c.end_date) : new Date(s.getTime() + 5*86400000);
+        for (let d = new Date(s); d <= e; d.setDate(d.getDate()+1)) {
+            const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+            periodDays.add(key);
+            if (!dayNotes[key]) dayNotes[key] = [];
+            dayNotes[key].push({ type:'period', cycle: c });
+        }
+    });
+
+    // Predict next 3 cycles
+    if (starts.length > 0) {
+        const lastStart = starts[starts.length-1];
+        for (let cycle = 1; cycle <= 3; cycle++) {
+            const nextStart = new Date(lastStart.getTime() + cycle * avgCycle * 86400000);
+            for (let i = 0; i < 5; i++) {
+                const d = new Date(nextStart.getTime() + i * 86400000);
+                const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+                if (!periodDays.has(key)) predictedDays.add(key);
+            }
+            // Fertile: 11-18 days before predicted period
+            for (let i = -18; i <= -11; i++) {
+                const d = new Date(nextStart.getTime() + i * 86400000);
+                const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+                if (!periodDays.has(key) && !predictedDays.has(key)) fertileDays.add(key);
+            }
+        }
+    }
+
+    let html = '';
+    // Prev month filler
+    for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="cal-day other-month"><div class="day-num">${daysInPrevMonth - i}</div></div>`;
+    }
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+        const key = `${year}-${month}-${d}`;
+        const isToday = today.getDate()===d && today.getMonth()===month && today.getFullYear()===year;
+        let cls = 'cal-day';
+        let badge = '';
+        if (periodDays.has(key)) { cls += ' period'; badge = '<div style="font-size:10px;color:var(--pink);margin-top:4px;">🩸 Period</div>'; }
+        else if (predictedDays.has(key)) { cls += ' predicted'; badge = '<div style="font-size:10px;color:#9E7A9A;margin-top:4px;">🔮 Predicted</div>'; }
+        else if (fertileDays.has(key)) { cls += ' fertile'; badge = '<div style="font-size:10px;color:#2E7D32;margin-top:4px;">🌱 Fertile</div>'; }
+        if (isToday) cls += ' today';
+        html += `<div class="${cls}" onclick="showDay(${year},${month},${d},'${key}')"><div class="day-num">${d}${isToday?'<span style="color:var(--pink);font-size:9px;margin-left:4px;">TODAY</span>':''}</div>${badge}</div>`;
+    }
+    // Next month filler
+    const remaining = (7 - ((firstDay + daysInMonth) % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+        html += `<div class="cal-day other-month"><div class="day-num">${d}</div></div>`;
+    }
+    document.getElementById('calGrid').innerHTML = html;
+}
+
+function changeMonth(dir) {
+    currentDate.setMonth(currentDate.getMonth() + dir);
+    renderCalendar();
+}
+
+function showDay(y, m, d, key) {
+    const dateStr = `${MONTHS[m]} ${d}, ${y}`;
+    const info = document.getElementById('dayInfo');
+    const body = document.getElementById('dayInfoBody');
+    document.getElementById('dayInfoTitle').textContent = `📅 ${dateStr}`;
+    info.style.display = 'block';
+    const matching = cycleData.filter(c => {
+        const s = new Date(c.start_date);
+        const e = c.end_date ? new Date(c.end_date) : new Date(s.getTime()+5*86400000);
+        const day = new Date(y, m, d);
+        return day >= s && day <= e;
+    });
+    if (matching.length > 0) {
+        body.innerHTML = matching.map(c => `
+            <div style="padding:12px;background:var(--pink-pale);border-radius:10px;margin-bottom:10px;">
+                <div><strong>Period:</strong> ${c.start_date} → ${c.end_date || 'ongoing'}</div>
+                ${c.mood ? `<div><strong>Mood:</strong> ${c.mood}</div>` : ''}
+                ${c.symptoms ? `<div><strong>Symptoms:</strong> ${c.symptoms}</div>` : ''}
+                ${c.notes ? `<div><strong>Notes:</strong> ${c.notes}</div>` : ''}
+            </div>`).join('');
+    } else {
+        body.innerHTML = '<div class="text-muted">No cycle recorded for this date.</div>';
+    }
+    info.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

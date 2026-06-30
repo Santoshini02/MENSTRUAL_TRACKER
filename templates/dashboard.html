@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Menstrual Tracker{% endblock %}
+{% block page_title %}Dashboard 🌸{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary btn-sm" onclick="openModal('logModal')"><i class="fas fa-plus"></i> Log Cycle</button>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div style="background: linear-gradient(135deg, #2D1B2E, #7B2D6E); border-radius: 18px; padding: 28px 32px; margin-bottom: 24px; position: relative; overflow: hidden;">
+    <div style="position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:72px;opacity:0.15;">🌸</div>
+    <div style="color:rgba(255,255,255,0.75);font-size:14px;margin-bottom:4px;">Good day,</div>
+    <div style="font-family:'Playfair Display',serif;font-size:24px;color:white;margin-bottom:6px;">{{ username }} 🌷</div>
+    <div style="color:rgba(255,255,255,0.65);font-size:13px;">Track your cycle, understand your body, feel empowered.</div>
+</div>
+
+<!-- Stat Cards -->
+<div class="grid-4 mb-6">
+    <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">Last Period</div>
+        <div class="stat-value" style="font-size:18px;">{{ stats.last_period }}</div>
+        <div class="stat-sub">Most recent start date</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🔮</div>
+        <div class="stat-label">Next Period</div>
+        <div class="stat-value" style="font-size:18px;">{{ stats.next_period }}</div>
+        <div class="stat-sub">Predicted date</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Avg Cycle Length</div>
+        <div class="stat-value">{{ stats.avg_cycle }}<span style="font-size:14px;color:var(--muted);"> days</span></div>
+        <div class="stat-sub">Based on your history</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🗂️</div>
+        <div class="stat-label">Cycles Logged</div>
+        <div class="stat-value">{{ stats.count }}</div>
+        <div class="stat-sub">Total records</div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="grid-2 mb-6">
+    <!-- Recent Cycles -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Recent Cycles</div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('logModal')"><i class="fas fa-plus"></i> Log</button>
+        </div>
+        <div class="card-body" style="padding:0">
+            {% if cycles %}
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr>
+                        <th>Start</th><th>End</th><th>Mood</th><th>Symptoms</th><th>Actions</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for c in cycles %}
+                    <tr>
+                        <td><strong>{{ c.start_date }}</strong></td>
+                        <td>{{ c.end_date or '—' }}</td>
+                        <td>{% if c.mood %}<span class="badge badge-pink">{{ c.mood }}</span>{% else %}—{% endif %}</td>
+                        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.symptoms or '—' }}</td>
+                        <td>
+                            <div style="display:flex;gap:6px;">
+                                <a href="/edit_cycle/{{ c.id }}" class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:11px;">✏️</a>
+                                <a href="/delete_cycle/{{ c.id }}" class="btn btn-danger btn-sm" style="padding:4px 8px;font-size:11px;" onclick="return confirm('Delete this cycle?')">🗑️</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🌸</div>
+                <p>No cycles logged yet.<br>Click "Log Cycle" to start tracking!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Links + Tips -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Quick Actions</div></div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <a href="/trends" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-chart-line" style="color:var(--pink);width:20px;"></i> View Analytics & Trends</a>
+                    <a href="/calendar" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-calendar-alt" style="color:var(--pink);width:20px;"></i> Open Calendar View</a>
+                    <a href="/ai" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-robot" style="color:var(--pink);width:20px;"></i> Get AI Insights</a>
+                    <a href="/symptoms" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-notes-medical" style="color:var(--pink);width:20px;"></i> View Symptoms</a>
+                </div>
+            </div>
+        </div>
+        <div class="card" style="background: linear-gradient(135deg, #FFF0F5, #FFE4EF);">
+            <div class="card-body">
+                <div style="font-size:18px;margin-bottom:8px;">💡 Health Tip</div>
+                <div style="font-size:14px;color:var(--text);line-height:1.6;" id="dailyTip">Loading tip...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cycle Donut + Progress -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header"><div class="card-title">Cycle Phase Tracker</div></div>
+        <div class="card-body" style="display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;">
+            <canvas id="phaseChart" width="160" height="160" style="max-width:160px;"></canvas>
+            <div id="phaseList" style="display:flex;flex-direction:column;gap:10px;font-size:13px;"></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><div class="card-title">Cycle Progress</div></div>
+        <div class="card-body" id="cycleProgress">
+            <div class="empty-state" style="padding:20px 0;">
+                <p>Log cycles to see your phase progress</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const tips = [
+    "Stay hydrated during your period — aim for 8–10 glasses of water daily to reduce bloating.",
+    "Iron-rich foods like spinach and lentils help replenish iron lost during menstruation.",
+    "Light yoga or walking can significantly reduce cramps and improve mood.",
+    "Tracking your cycle consistently helps predict patterns and irregularities earlier.",
+    "Magnesium-rich foods like dark chocolate and bananas can ease PMS symptoms.",
+    "Adequate sleep (7–9 hours) is crucial during your cycle for hormonal balance.",
+    "Heat therapy on your lower abdomen can provide quick relief from menstrual cramps."
+];
+document.getElementById('dailyTip').textContent = tips[new Date().getDay() % tips.length];
+
+// Phase Chart
+const phaseData = { labels: ['Menstruation', 'Follicular', 'Ovulation', 'Luteal'], data: [5, 9, 2, 12], colors: ['#E75480','#FF85A1','#7B3F6E','#FFAAC8'] };
+new Chart(document.getElementById('phaseChart'), {
+    type: 'doughnut',
+    data: { labels: phaseData.labels, datasets: [{ data: phaseData.data, backgroundColor: phaseData.colors, borderWidth: 2, borderColor: 'white' }] },
+    options: { cutout: '65%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: ~${c.raw} days` } } } }
+});
+phaseData.labels.forEach((l, i) => {
+    document.getElementById('phaseList').innerHTML += `<div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:50%;background:${phaseData.colors[i]};flex-shrink:0;"></div><span><strong>${l}</strong> (~${phaseData.data[i]} days)</span></div>`;
+});
+
+// Cycle Progress
+fetch('/api/ai_insights').then(r=>r.json()).then(d => {
+    if (d.next_period !== 'N/A') {
+        const container = document.getElementById('cycleProgress');
+        const today = new Date();
+        const nextP = new Date(d.next_period.split(' ').reverse().join('-'));
+        const daysLeft = Math.round((nextP - today) / 86400000);
+        const pct = Math.max(0, Math.min(100, 100 - (daysLeft / (d.avg_cycle || 28)) * 100));
+        container.innerHTML = `
+            <div style="margin-bottom:16px;">
+                <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Days until next period</div>
+                <div style="font-size:32px;font-weight:700;font-family:'Playfair Display',serif;color:var(--deep);">${Math.max(0,daysLeft)}</div>
+                <div style="font-size:12px;color:var(--muted);">Expected: ${d.next_period}</div>
+            </div>
+            <div style="background:#F5D5E5;border-radius:20px;height:10px;overflow:hidden;margin-bottom:12px;">
+                <div style="background:var(--pink);height:100%;width:${pct}%;border-radius:20px;transition:width 0.8s;"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+                <div style="background:var(--pink-pale);border-radius:10px;padding:10px;">
+                    <div style="color:var(--muted);">Fertile window</div>
+                    <div style="font-weight:600;color:var(--deep);margin-top:3px;">${d.fertile_start}</div>
+                </div>
+                <div style="background:var(--pink-pale);border-radius:10px;padding:10px;">
+                    <div style="color:var(--muted);">Regularity</div>
+                    <div style="font-weight:600;color:var(--deep);margin-top:3px;">${d.regularity}</div>
+                </div>
+            </div>`;
+    }
+});
+</script>
+{% endblock %}

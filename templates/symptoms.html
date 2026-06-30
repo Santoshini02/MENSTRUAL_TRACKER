@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Symptoms — Menstrual Tracker{% endblock %}
+{% block page_title %}Symptoms 🩺{% endblock %}
+{% block topbar_actions %}
+<button class="btn btn-primary btn-sm" onclick="openModal('logModal')"><i class="fas fa-plus"></i> Log Cycle</button>
+{% endblock %}
+
+{% block content %}
+{% set all_symptoms = [] %}
+{% for c in cycles %}
+    {% if c.symptoms %}
+        {% for s in c.symptoms.split(',') %}
+            {% if s.strip() %}{% set _ = all_symptoms.append(s.strip().lower()) %}{% endif %}
+        {% endfor %}
+    {% endif %}
+{% endfor %}
+
+{% set sym_counts = {} %}
+{% for s in all_symptoms %}
+    {% if s in sym_counts %}{% set _ = sym_counts.update({s: sym_counts[s]+1}) %}{% else %}{% set _ = sym_counts.update({s: 1}) %}{% endif %}
+{% endfor %}
+
+<!-- Symptom Frequency Overview -->
+<div class="grid-3 mb-6">
+    <div class="stat-card">
+        <div class="stat-icon">🩺</div>
+        <div class="stat-label">Unique Symptoms</div>
+        <div class="stat-value">{{ sym_counts|length }}</div>
+        <div class="stat-sub">Across all cycles</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div class="stat-label">Total Occurrences</div>
+        <div class="stat-value">{{ all_symptoms|length }}</div>
+        <div class="stat-sub">Total logged</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🔁</div>
+        <div class="stat-label">Most Common</div>
+        <div class="stat-value" style="font-size:16px;">
+            {% if sym_counts %}
+                {% set max_sym = namespace(name='', count=0) %}
+                {% for s, c in sym_counts.items() %}{% if c > max_sym.count %}{% set max_sym.name = s %}{% set max_sym.count = c %}{% endif %}{% endfor %}
+                {{ max_sym.name|title }}
+            {% else %}N/A{% endif %}
+        </div>
+        <div class="stat-sub">Highest frequency</div>
+    </div>
+</div>
+
+<div class="grid-2 mb-6">
+    <!-- Symptom Cards -->
+    <div class="card">
+        <div class="card-header"><div class="card-title">Symptom Frequency</div></div>
+        <div class="card-body">
+            {% if sym_counts %}
+                {% set sorted_syms = sym_counts.items()|sort(attribute=1, reverse=True) %}
+                {% for sym, count in sorted_syms %}
+                <div style="margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                        <span style="font-size:13px;font-weight:600;color:var(--text);text-transform:capitalize;">{{ sym }}</span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            {% if count >= 3 %}<span class="badge badge-red">Frequent</span>
+                            {% elif count >= 2 %}<span class="badge badge-yellow">Occasional</span>
+                            {% else %}<span class="badge badge-green">Rare</span>{% endif %}
+                            <span style="font-size:12px;color:var(--muted);">{{ count }}x</span>
+                        </div>
+                    </div>
+                    <div style="background:#F5D5E5;border-radius:20px;height:8px;overflow:hidden;">
+                        <div style="background:var(--pink);height:100%;border-radius:20px;width:{{ (count / (sym_counts.values()|max)) * 100 }}%;transition:width 0.8s;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">🩺</div>
+                    <p>No symptoms logged yet.<br>Add symptoms when logging your cycle.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cycle-wise Symptom Log -->
+    <div class="card">
+        <div class="card-header"><div class="card-title">Cycle-by-Cycle Symptoms</div></div>
+        <div class="card-body" style="padding:0;">
+            {% if cycles %}
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>Date</th><th>Mood</th><th>Symptoms</th></tr></thead>
+                    <tbody>
+                    {% for c in cycles %}
+                    {% if c.symptoms or c.mood %}
+                    <tr>
+                        <td><strong>{{ c.start_date }}</strong></td>
+                        <td>{% if c.mood %}<span class="badge badge-pink">{{ c.mood }}</span>{% else %}—{% endif %}</td>
+                        <td>
+                            {% if c.symptoms %}
+                                {% for s in c.symptoms.split(',') %}
+                                    {% if s.strip() %}<span class="badge badge-pink" style="margin:2px;font-size:10px;">{{ s.strip() }}</span>{% endif %}
+                                {% endfor %}
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <p>No cycle data yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Symptom Health Guide -->
+<div class="card">
+    <div class="card-header"><div class="card-title">💡 Symptom Guidance</div></div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+            {% set guides = [
+                ('🔴', 'Cramps', 'Heat pad, ibuprofen, light yoga, hydration, and omega-3 foods help reduce cramping.'),
+                ('🔵', 'Bloating', 'Reduce salt and processed foods before period. Peppermint tea and walking can help.'),
+                ('🟡', 'Headaches', 'Stay hydrated. Track if hormonal. Magnesium and Vitamin B2 may help prevent migraines.'),
+                ('🟢', 'Fatigue', 'Iron-rich foods, adequate sleep, and gentle movement can fight period fatigue.'),
+                ('🟣', 'Mood Swings', 'Regular sleep, exercise, and reducing caffeine can stabilize mood before your period.'),
+                ('🟠', 'Back Pain', 'Stretching, heat therapy, and over-the-counter pain relievers can ease lower back pain.')
+            ] %}
+            {% for emoji, name, tip in guides %}
+            <div style="background:var(--pink-pale);border-radius:12px;padding:16px;">
+                <div style="font-size:20px;margin-bottom:6px;">{{ emoji }}</div>
+                <div style="font-weight:700;color:var(--deep);font-size:14px;margin-bottom:6px;">{{ name }}</div>
+                <div style="font-size:12px;color:var(--text);line-height:1.5;">{{ tip }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

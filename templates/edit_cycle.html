@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Edit Cycle — Menstrual Tracker{% endblock %}
+{% block page_title %}Edit Cycle ✏️{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;margin:0 auto;">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Edit Cycle Record</div>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Start Date *</label>
+                        <input type="date" name="start_date" class="form-control" value="{{ cycle.start_date }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" name="end_date" class="form-control" value="{{ cycle.end_date or '' }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mood</label>
+                    <select name="mood" class="form-control">
+                        <option value="">-- Select mood --</option>
+                        {% for mood in ['Happy 😊','Sad 😢','Anxious 😰','Irritable 😠','Calm 😌','Energetic ⚡','Tired 😴','Emotional 🥺'] %}
+                        <option {% if cycle.mood == mood %}selected{% endif %}>{{ mood }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Symptoms (comma separated)</label>
+                    <input type="text" name="symptoms" class="form-control" value="{{ cycle.symptoms or '' }}" placeholder="e.g. cramps, bloating, headache">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="3">{{ cycle.notes or '' }}</textarea>
+                </div>
+                <div class="flex gap-3 justify-end mt-4">
+                    <a href="/dashboard" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
